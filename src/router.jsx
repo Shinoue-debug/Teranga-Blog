@@ -5,9 +5,8 @@ import Accueil from "./pages/Accueil.jsx";
 // Remplace cette route provisoire par ta table de routes :
 // un layout parent (LayoutPrincipal) et ses routes enfants,
 // dont une route avec paramètre d'URL et une route générique "*".
-import { createBrowserRouter } from "react-router";
 import LayoutPrincipal from "./layouts/LayoutPrincipal";
-import Accueil from "./pages/Accueil";
+
 import Articles from "./pages/Articles";
 import Article from "./pages/Article";
 import Auteurs from "./pages/Auteurs";

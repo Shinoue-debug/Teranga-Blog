@@ -2,36 +2,71 @@
 // Page d'accueil : présentation et les derniers articles.
 // src/components/ArticleCard.jsx
 // src/pages/Accueil.jsx (avec le point de départ que tu as montré)
-import { useState } from "react";
-import ArticleCard from "../components/ArticleCard";
-import { articlesTest } from "../donnees-test";
+import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router";
+import { API_URL } from "../constants";
+import EtatRequete from "../components/EtatRequete";
+import ListeArticles from "../components/ListeArticles";
 
 export default function Accueil() {
-  const [favoris, setFavoris] = useState([]);
+  const outletContext = useOutletContext() || {};
+  const { favoris = [], onToggleFavori } = outletContext;
 
-  function handleToggleFavori(article) {
-    setFavoris((prev) => {
-      const existe = prev.some((item) => item.id === article.id);
-      if (existe) {
-        return prev.filter((item) => item.id !== article.id);
+  const [articles, setArticles] = useState([]);
+  const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function chargerDerniersArticles() {
+      setChargement(true);
+      setErreur(null);
+
+      try {
+        const reponse = await fetch(`${API_URL}/posts?_limit=12`, {
+          signal: controller.signal,
+        });
+
+        if (!reponse.ok) {
+          throw new Error(
+            `Impossible de charger les articles (HTTP ${reponse.status}).`
+          );
+        }
+
+        const donnees = await reponse.json();
+        setArticles(donnees);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          setErreur(err.message || "Erreur réseau.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setChargement(false);
+        }
       }
-      return [...prev, article];
-    });
-  }
+    }
+
+    chargerDerniersArticles();
+
+    return () => controller.abort();
+  }, []);
 
   return (
     <section>
-      <p className="discret">Accueil — Favoris : {favoris.length}</p>
-      <div className="grille-articles">
-        {[articlesTest[0], articlesTest[1], articlesTest[2]].map((article) => (
-          <ArticleCard
-            key={article.id}
-            article={article}
-            estFavori={favoris.some((item) => item.id === article.id)}
-            onToggleFavori={handleToggleFavori}
-          />
-        ))}
-      </div>
+      <h1>Accueil — Derniers articles</h1>
+      <EtatRequete
+        chargement={chargement}
+        erreur={erreur}
+        estVide={articles.length === 0}
+        messageVide="Aucun article disponible."
+      >
+        <ListeArticles
+          articles={articles}
+          favoris={favoris}
+          onToggleFavori={onToggleFavori}
+        />
+      </EtatRequete>
     </section>
   );
 }
